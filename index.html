@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Location API Demo</title>
+</head>
+
+<body>
+
+<h2>Select Location</h2>
+
+<select id="state"></select>
+<select id="district"></select>
+<select id="subdistrict"></select>
+<select id="village"></select>
+
+<script>
+const API_KEY = "123456";
+
+async function fetchData(url) {
+  try {
+    const res = await fetch(url, {
+      headers: { "x-api-key": API_KEY }
+    });
+    return await res.json();
+  } catch (error) {
+    console.log("Error:", error);
+    return [];
+  }
+}
+
+const state = document.getElementById("state");
+const district = document.getElementById("district");
+const subdistrict = document.getElementById("subdistrict");
+const village = document.getElementById("village");
+
+
+// 🔹 LOAD STATES
+fetchData("http://localhost:5000/states").then(data => {
+  state.innerHTML = "<option>Select State</option>";
+  data.forEach(s => {
+    state.innerHTML += `<option value="${s.state_id}">${s.state_name}</option>`;
+  });
+});
+
+
+// 🔹 STATE → DISTRICTS
+state.addEventListener("change", () => {
+  district.innerHTML = "<option>Loading...</option>";
+  subdistrict.innerHTML = "";
+  village.innerHTML = "";
+
+  fetchData(`http://localhost:5000/districts?state_id=${state.value}`)
+  .then(data => {
+    if (data.length > 0) {
+      district.innerHTML = "<option>Select District</option>";
+      data.forEach(d => {
+        district.innerHTML += `<option value="${d.district_id}">${d.district_name}</option>`;
+      });
+    } else {
+      district.innerHTML = "<option>No districts found</option>";
+    }
+  });
+});
+
+
+// 🔹 DISTRICT → SUBDISTRICTS
+district.addEventListener("change", () => {
+  subdistrict.innerHTML = "<option>Loading...</option>";
+  village.innerHTML = "";
+
+  fetchData(`http://localhost:5000/subdistricts?district_id=${district.value}`)
+  .then(data => {
+    if (data.length > 0) {
+      subdistrict.innerHTML = "<option>Select Subdistrict</option>";
+      data.forEach(s => {
+        subdistrict.innerHTML += `<option value="${s.subdistrict_id}">${s.sub_district_name}</option>`;
+      });
+    } else {
+      subdistrict.innerHTML = "<option>No subdistricts available</option>";
+    }
+  });
+});
+
+
+// 🔹 SUBDISTRICT → VILLAGES
+subdistrict.addEventListener("change", () => {
+  village.innerHTML = "<option>Loading...</option>";
+
+  fetchData(`http://localhost:5000/villages?subdistrict_id=${subdistrict.value}&limit=20`)
+  .then(data => {
+
+    const villagesList = data.data || [];
+
+    if (villagesList.length > 0) {
+      village.innerHTML = "<option>Select Village</option>";
+      villagesList.forEach(v => {
+        village.innerHTML += `<option>${v.village_name}</option>`;
+      });
+    } else {
+      village.innerHTML = "<option>No villages found</option>";
+    }
+  });
+});
+
+</script>
+
+</body>
+</html>
